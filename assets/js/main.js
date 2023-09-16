@@ -1,47 +1,56 @@
-const pokemonList = document.getElementById('pokemonList')
-const loadMoreButton = document.getElementById('loadMoreButton')
+const prevPageButton = document.getElementById('prevPageButton');
+const nextPageButton = document.getElementById('nextPageButton');
+const changeLimitButton = document.getElementById('changeLimitButton');
+const limitInput = document.getElementById('limitInput');
+const pokemonList = document.getElementById('pokemonList');
+let limit = parseInt(limitInput.value); // Initialize limit from the input
+let currentPage = 1;
 
-const maxRecords = 151
-const limit = 10
-let offset = 0;
+function loadPokemonItems(pageNumber, limit) {
+    const offset = (pageNumber - 1) * limit;
+    pokeApi.getPokemon(offset, limit).then((pokemons = []) => {
+        const newList = pokemons.map((pokemon) => `
+        <a href="card.html?id=${pokemon.number}" id="linkCard">
+            <li class="pokemon ${pokemon.type}">
+                <span class="number">#${pokemon.number}</span>
+                <span class="name">${pokemon.name}</span>
 
-function convertPokemonToLi(pokemon) {
-    return `
-        <li class="pokemon ${pokemon.type}">
-            <span class="number">#${pokemon.number}</span>
-            <span class="name">${pokemon.name}</span>
+                <div class="detail">
+                    <ol class="types">
+                        ${pokemon.types.map((type) => `<li class="type ${type}">${type}</li>`).join('')}
+                    </ol>
 
-            <div class="detail">
-                <ol class="types">
-                    ${pokemon.types.map((type) => `<li class="type ${type}">${type}</li>`).join('')}
-                </ol>
+                    <img src="${pokemon.photo}" alt="${pokemon.name}">
+                </div>
+            </li> 
+        </a>
+        `).join('');
 
-                <img src="${pokemon.photo}"
-                     alt="${pokemon.name}">
-            </div>
-        </li>
-    `
+        pokemonList.innerHTML = newList;
+    });
 }
 
-function loadPokemonItens(offset, limit) {
-    pokeApi.getPokemons(offset, limit).then((pokemons = []) => {
-        const newHtml = pokemons.map(convertPokemonToLi).join('')
-        pokemonList.innerHTML += newHtml
-    })
+function loadNextPage() {
+    currentPage++;
+    loadPokemonItems(currentPage, limit);
 }
 
-loadPokemonItens(offset, limit)
-
-loadMoreButton.addEventListener('click', () => {
-    offset += limit
-    const qtdRecordsWithNexPage = offset + limit
-
-    if (qtdRecordsWithNexPage >= maxRecords) {
-        const newLimit = maxRecords - offset
-        loadPokemonItens(offset, newLimit)
-
-        loadMoreButton.parentElement.removeChild(loadMoreButton)
-    } else {
-        loadPokemonItens(offset, limit)
+function loadPrevPage() {
+    if (currentPage > 1) {
+        currentPage--;
+        loadPokemonItems(currentPage, limit);
     }
-})
+}
+
+function changeLimit() {
+    limit = parseInt(limitInput.value);
+    currentPage = 1; // Reset to the first page when changing the limit
+    loadPokemonItems(currentPage, limit);
+}
+
+// Initial load
+loadPokemonItems(currentPage, limit);
+
+nextPageButton.addEventListener('click', loadNextPage);
+prevPageButton.addEventListener('click', loadPrevPage);
+changeLimitButton.addEventListener('click', changeLimit);
